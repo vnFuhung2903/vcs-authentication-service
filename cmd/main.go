@@ -56,7 +56,7 @@ func main() {
 	r.GET("/swagger/*any", swagger.WrapHandler(swaggerFiles.Handler))
 
 	if err := r.Run(":8082"); err != nil {
-		log.Fatalf("Failed to run container: %v", err)
+		log.Fatalf("Failed to run service: %v", err)
 	} else {
 		logger.Info("Authentication service is running on port 8082")
 	}
