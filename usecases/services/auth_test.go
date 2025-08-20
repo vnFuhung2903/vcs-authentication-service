@@ -231,7 +231,7 @@ func (s *AuthServiceSuite) TestRefreshAccessToken() {
 	user := &entities.User{
 		ID:       userId,
 		Username: "testuser",
-		Scopes: []entities.UserScope{
+		Scopes: []*entities.UserScope{
 			{Name: "user:modify"},
 			{Name: "container:create"},
 		},

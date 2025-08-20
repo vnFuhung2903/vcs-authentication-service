@@ -33,8 +33,7 @@ func (suite *UserRepoSuite) SetupTest() {
 		Username: "test-user",
 		Hash:     "hashed-password",
 		Email:    "test@example.com",
-		Role:     entities.Developer,
-		Scopes: []entities.UserScope{
+		Scopes: []*entities.UserScope{
 			{Name: "user:read"},
 			{Name: "user:write"},
 		},

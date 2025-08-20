@@ -1,6 +1,6 @@
 package entities
 
 type UserScope struct {
-	ID   int64  `gorm:"primaryKey"`
+	ID   uint   `gorm:"primaryKey"`
 	Name string `gorm:"type:varchar(50);unique;not null"`
 }
