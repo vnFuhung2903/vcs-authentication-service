@@ -4,8 +4,6 @@ go 1.24.2
 
 require (
 	github.com/docker/go-connections v0.5.0
-	github.com/elastic/go-elasticsearch v0.0.0
-	github.com/elastic/go-elasticsearch/v8 v8.19.0
 	github.com/gin-gonic/gin v1.10.1
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/lib/pq v1.10.9
@@ -41,7 +39,6 @@ require (
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/ebitengine/purego v0.8.4 // indirect
-	github.com/elastic/elastic-transport-go/v8 v8.7.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
