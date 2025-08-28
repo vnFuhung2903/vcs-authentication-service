@@ -9,16 +9,16 @@ import (
 	"github.com/vnFuhung2903/vcs-authentication-service/usecases/services"
 )
 
-type AuthHandler struct {
+type authHandler struct {
 	authService   services.IAuthService
 	jwtMiddleware middlewares.IJWTMiddleware
 }
 
-func NewAuthHandler(authService services.IAuthService, jwtMiddleware middlewares.IJWTMiddleware) *AuthHandler {
-	return &AuthHandler{authService, jwtMiddleware}
+func NewAuthHandler(authService services.IAuthService, jwtMiddleware middlewares.IJWTMiddleware) *authHandler {
+	return &authHandler{authService, jwtMiddleware}
 }
 
-func (h *AuthHandler) SetupRoutes(r *gin.Engine) {
+func (h *authHandler) SetupRoutes(r *gin.Engine) {
 	authRoutes := r.Group("/auth")
 	{
 		authRoutes.POST("/login", h.Login)
@@ -42,7 +42,7 @@ func (h *AuthHandler) SetupRoutes(r *gin.Engine) {
 // @Failure 400 {object} dto.APIResponse "Bad request"
 // @Failure 500 {object} dto.APIResponse "Internal server error"
 // @Router /auth/login [post]
-func (h *AuthHandler) Login(c *gin.Context) {
+func (h *authHandler) Login(c *gin.Context) {
 	var req dto.LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, dto.APIResponse{
@@ -87,7 +87,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 // @Failure 500 {object} dto.APIResponse "Internal server error"
 // @Security BearerAuth
 // @Router /auth/update/password [put]
-func (h *AuthHandler) UpdatePassword(c *gin.Context) {
+func (h *authHandler) UpdatePassword(c *gin.Context) {
 	userId := c.GetString("userId")
 	var req dto.UpdatePasswordRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -127,7 +127,7 @@ func (h *AuthHandler) UpdatePassword(c *gin.Context) {
 // @Failure 500 {object} dto.APIResponse "Internal server error"
 // @Security BearerAuth
 // @Router /auth/refresh [post]
-func (h *AuthHandler) RefreshAccessToken(c *gin.Context) {
+func (h *authHandler) RefreshAccessToken(c *gin.Context) {
 	userId := c.GetString("userId")
 	accessToken, err := h.authService.RefreshAccessToken(c.Request.Context(), userId)
 	if err != nil {

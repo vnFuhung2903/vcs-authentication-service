@@ -22,7 +22,7 @@ type AuthHandlerSuite struct {
 	ctrl              *gomock.Controller
 	mockAuthService   *services.MockIAuthService
 	mockJWTMiddleware *middlewares.MockIJWTMiddleware
-	handler           *AuthHandler
+	handler           *authHandler
 	router            *gin.Engine
 }
 

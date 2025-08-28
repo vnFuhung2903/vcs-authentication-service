@@ -27,7 +27,7 @@ func NewUserRepository(db *gorm.DB) IUserRepository {
 
 func (r *userRepository) FindById(userId string) (*entities.User, error) {
 	var user entities.User
-	res := r.db.First(&user, entities.User{ID: userId})
+	res := r.db.Preload("Scopes").First(&user, entities.User{ID: userId})
 	if res.Error != nil {
 		return nil, res.Error
 	}
@@ -36,7 +36,7 @@ func (r *userRepository) FindById(userId string) (*entities.User, error) {
 
 func (r *userRepository) FindByName(username string) (*entities.User, error) {
 	var user entities.User
-	res := r.db.First(&user, entities.User{Username: username})
+	res := r.db.Preload("Scopes").First(&user, entities.User{Username: username})
 	if res.Error != nil {
 		return nil, res.Error
 	}
@@ -45,7 +45,7 @@ func (r *userRepository) FindByName(username string) (*entities.User, error) {
 
 func (r *userRepository) FindByEmail(email string) (*entities.User, error) {
 	var user entities.User
-	res := r.db.First(&user, entities.User{Email: email})
+	res := r.db.Preload("Scopes").First(&user, entities.User{Email: email})
 	if res.Error != nil {
 		return nil, res.Error
 	}
