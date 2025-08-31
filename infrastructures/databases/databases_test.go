@@ -29,7 +29,7 @@ func (suite *DatabasesSuite) SetupSuite() {
 	suite.ctx = context.Background()
 
 	req := testcontainers.ContainerRequest{
-		Image:        "postgres:15-alpine",
+		Image:        "postgres:latest",
 		ExposedPorts: []string{"5432/tcp"},
 		Env: map[string]string{
 			"POSTGRES_USER":     "testuser",
@@ -131,7 +131,7 @@ func (suite *DatabasesSuite) TestConnectRedis() {
 	ctx := context.Background()
 
 	req := testcontainers.ContainerRequest{
-		Image:        "redis:latest",
+		Image:        "redis:7",
 		ExposedPorts: []string{"6379/tcp"},
 		WaitingFor:   wait.ForListeningPort("6379/tcp"),
 	}

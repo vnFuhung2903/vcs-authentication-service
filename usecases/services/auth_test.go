@@ -57,6 +57,10 @@ func (s *AuthServiceSuite) TestLoginWithUsername() {
 		ID:       "test-id",
 		Username: username,
 		Hash:     string(hashedPassword),
+		Scopes: []*entities.UserScope{
+			{Name: "user:modify"},
+			{Name: "container:create"},
+		},
 	}
 
 	s.mockRepo.EXPECT().FindByName(username).Return(expected, nil)

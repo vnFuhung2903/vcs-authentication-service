@@ -71,7 +71,7 @@ func LoadEnv() (*Env, error) {
 		PostgresName:     v.GetString("POSTGRES_USER_DB"),
 		PostgresPort:     v.GetString("POSTGRES_PORT"),
 	}
-	if postgresEnv.PostgresHost == "" || postgresEnv.PostgresUser == "" || postgresEnv.PostgresPassword == "" || postgresEnv.PostgresName == "" || postgresEnv.PostgresPort == "" {
+	if postgresEnv.PostgresHost == "" || postgresEnv.PostgresUser == "" || postgresEnv.PostgresName == "" || postgresEnv.PostgresPort == "" {
 		return nil, errors.New("postgres environment variables are empty")
 	}
 

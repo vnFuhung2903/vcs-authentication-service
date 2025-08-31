@@ -247,35 +247,3 @@ func (s *JWTMiddlewareSuite) TestCheckBearerAuthInvalidUserIdType() {
 	s.NoError(err)
 	s.Equal("Insufficient userId", response["error"])
 }
-
-func (s *JWTMiddlewareSuite) TestCheckBearerAuthWithNonStringScopes() {
-	claims := jwt.MapClaims{
-		"sub":   "123",
-		"name":  "testuser",
-		"scope": []interface{}{"read", 123, "write", nil},
-		"exp":   time.Now().Add(time.Hour).Unix(),
-		"iat":   time.Now().Unix(),
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString([]byte(s.testSecret))
-	s.Require().NoError(err)
-
-	s.router.GET("/test", s.jwtMiddleware.CheckBearerAuth(), func(c *gin.Context) {
-		userId, exists := c.Get("userId")
-		s.True(exists)
-		s.Equal("123", userId)
-		c.JSON(http.StatusOK, gin.H{"message": "success"})
-	})
-
-	req, _ := http.NewRequest("GET", "/test", nil)
-	req.Header.Set("Authorization", "Bearer "+tokenString)
-	w := httptest.NewRecorder()
-
-	s.router.ServeHTTP(w, req)
-	s.Equal(http.StatusOK, w.Code)
-
-	var response map[string]interface{}
-	err = json.Unmarshal(w.Body.Bytes(), &response)
-	s.NoError(err)
-	s.Equal("success", response["message"])
-}

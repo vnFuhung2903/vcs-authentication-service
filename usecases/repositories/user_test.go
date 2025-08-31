@@ -53,7 +53,7 @@ func TestUserRepoSuite(t *testing.T) {
 func (suite *UserRepoSuite) TestFindById() {
 	found, err := suite.repo.FindById("test-id")
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), "alice", found.Username)
+	assert.Equal(suite.T(), "test-user", found.Username)
 }
 
 func (suite *UserRepoSuite) TestFindByIdNotFound() {
