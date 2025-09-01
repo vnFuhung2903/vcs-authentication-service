@@ -67,6 +67,17 @@ func (suite *ViperSuite) TestLoadEnv() {
 	suite.Equal(5, env.LoggerEnv.MaxBackups)
 }
 
+func (suite *ViperSuite) TestLoadEnvInvalidJwtValues() {
+	envContent := map[string]string{
+		"JWT_SECRET_KEY": "",
+	}
+	suite.createEnvVars(envContent)
+	env, err := LoadEnv()
+
+	suite.Error(err)
+	suite.Nil(env)
+}
+
 func (suite *ViperSuite) TestLoadEnvInvalidLoggerValues() {
 	envContent := map[string]string{
 		"JWT_SECRET_KEY": "test_jwt_secret",
