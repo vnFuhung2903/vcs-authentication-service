@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"net/mail"
 	"time"
 
@@ -16,8 +18,8 @@ import (
 )
 
 type IAuthService interface {
-	Login(ctx context.Context, username, password string) (string, error)
-	RefreshAccessToken(ctx context.Context, userId string) (string, error)
+	Login(ctx context.Context, username, password string) (string, string, error)
+	RefreshAccessToken(ctx context.Context, refreshToken string) (string, error)
 	UpdatePassword(ctx context.Context, userId, currentPassword, newPassword string) error
 }
 
@@ -37,26 +39,26 @@ func NewAuthService(userRepo repositories.IUserRepository, redisClient interface
 	}
 }
 
-func (s *authService) Login(ctx context.Context, username, password string) (string, error) {
+func (s *authService) Login(ctx context.Context, username, password string) (string, string, error) {
 	var user *entities.User
 	mail, err := mail.ParseAddress(username)
 	if err != nil {
 		user, err = s.userRepo.FindByName(username)
 		if err != nil {
 			s.logger.Error("failed to find user by username", zap.Error(err))
-			return "", err
+			return "", "", err
 		}
 	} else {
 		user, err = s.userRepo.FindByEmail(mail.Address)
 		if err != nil {
 			s.logger.Error("failed to find user by email", zap.Error(err))
-			return "", err
+			return "", "", err
 		}
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Hash), []byte(password)); err != nil {
 		s.logger.Error("failed to validate password", zap.Error(err))
-		return "", err
+		return "", "", err
 	}
 
 	scopes := make([]string, 0, len(user.Scopes))
@@ -67,21 +69,21 @@ func (s *authService) Login(ctx context.Context, username, password string) (str
 	accessToken, err := s.generateAccessToken(user.ID, scopes)
 	if err != nil {
 		s.logger.Error("failed to generate access token", zap.Error(err))
-		return "", err
+		return "", "", err
 	}
-	refreshToken, err := s.generateRefreshToken(user.ID)
+	refreshToken, err := s.generateRefreshToken()
 	if err != nil {
 		s.logger.Error("failed to generate refresh token", zap.Error(err))
-		return "", err
+		return "", "", err
 	}
 
-	if err := s.redisClient.Set(ctx, "refresh:"+user.ID, refreshToken, time.Hour*24*7); err != nil {
+	if err := s.redisClient.Set(ctx, "refresh:"+refreshToken, user.ID, time.Hour*24*7); err != nil {
 		s.logger.Error("failed to set refresh token in redis", zap.Error(err))
-		return "", err
+		return "", "", err
 	}
 
 	s.logger.Info("user logged in successfully")
-	return accessToken, nil
+	return accessToken, refreshToken, nil
 }
 
 func (s *authService) UpdatePassword(ctx context.Context, userId, currentPassword, newPassword string) error {
@@ -116,19 +118,10 @@ func (s *authService) UpdatePassword(ctx context.Context, userId, currentPasswor
 	return nil
 }
 
-func (s *authService) RefreshAccessToken(ctx context.Context, userId string) (string, error) {
-	refreshToken, err := s.redisClient.Get(ctx, "refresh:"+userId)
+func (s *authService) RefreshAccessToken(ctx context.Context, refreshToken string) (string, error) {
+	userId, err := s.redisClient.Get(ctx, "refresh:"+refreshToken)
 	if err != nil {
 		s.logger.Error("failed to get refresh token from redis", zap.Error(err))
-		return "", err
-	}
-
-	claims := &jwt.MapClaims{}
-	token, err := jwt.ParseWithClaims(refreshToken, claims, func(token *jwt.Token) (interface{}, error) {
-		return s.jwtSecret, nil
-	})
-	if err != nil || !token.Valid {
-		s.logger.Error("invalid refresh token", zap.Error(err))
 		return "", err
 	}
 
@@ -168,16 +161,11 @@ func (s *authService) generateAccessToken(userId string, scope []string) (string
 	return signedAccessToken, nil
 }
 
-func (s *authService) generateRefreshToken(userId string) (string, error) {
-	claims := jwt.MapClaims{
-		"sub": userId,
-		"exp": time.Now().Add(time.Hour * 24 * 7).Unix(),
-		"iat": time.Now().Unix(),
-	}
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	signedRefreshToken, err := accessToken.SignedString(s.jwtSecret)
-	if err != nil {
+func (s *authService) generateRefreshToken() (string, error) {
+	b := make([]byte, 64)
+	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
-	return signedRefreshToken, nil
+	refreshToken := base64.URLEncoding.EncodeToString(b)
+	return refreshToken, nil
 }

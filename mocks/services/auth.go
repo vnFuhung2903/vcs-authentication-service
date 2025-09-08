@@ -35,12 +35,13 @@ func (m *MockIAuthService) EXPECT() *MockIAuthServiceMockRecorder {
 }
 
 // Login mocks base method.
-func (m *MockIAuthService) Login(ctx context.Context, username, password string) (string, error) {
+func (m *MockIAuthService) Login(ctx context.Context, username, password string) (string, string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Login", ctx, username, password)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // Login indicates an expected call of Login.
@@ -50,18 +51,18 @@ func (mr *MockIAuthServiceMockRecorder) Login(ctx, username, password interface{
 }
 
 // RefreshAccessToken mocks base method.
-func (m *MockIAuthService) RefreshAccessToken(ctx context.Context, userId string) (string, error) {
+func (m *MockIAuthService) RefreshAccessToken(ctx context.Context, refreshToken string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "RefreshAccessToken", ctx, userId)
+	ret := m.ctrl.Call(m, "RefreshAccessToken", ctx, refreshToken)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // RefreshAccessToken indicates an expected call of RefreshAccessToken.
-func (mr *MockIAuthServiceMockRecorder) RefreshAccessToken(ctx, userId interface{}) *gomock.Call {
+func (mr *MockIAuthServiceMockRecorder) RefreshAccessToken(ctx, refreshToken interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshAccessToken", reflect.TypeOf((*MockIAuthService)(nil).RefreshAccessToken), ctx, userId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RefreshAccessToken", reflect.TypeOf((*MockIAuthService)(nil).RefreshAccessToken), ctx, refreshToken)
 }
 
 // UpdatePassword mocks base method.

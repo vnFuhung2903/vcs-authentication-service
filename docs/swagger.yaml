@@ -22,12 +22,22 @@ definitions:
     - password
     - username
     type: object
+  dto.RefreshTokenRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
   dto.UpdatePasswordRequest:
     properties:
       current_password:
         type: string
       new_password:
         type: string
+    required:
+    - current_password
+    - new_password
     type: object
 host: localhost:8082
 info:
@@ -71,6 +81,13 @@ paths:
       consumes:
       - application/json
       description: Refresh the access token for the currently authenticated user
+      parameters:
+      - description: Refresh token request
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/dto.RefreshTokenRequest'
       produces:
       - application/json
       responses:

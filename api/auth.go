@@ -22,11 +22,11 @@ func (h *authHandler) SetupRoutes(r *gin.Engine) {
 	authRoutes := r.Group("/auth")
 	{
 		authRoutes.POST("/login", h.Login)
+		authRoutes.POST("/refresh", h.RefreshAccessToken)
 
 		authRequiredGroup := authRoutes.Group("", h.jwtMiddleware.CheckBearerAuth())
 		{
 			authRequiredGroup.PUT("/update/password", h.UpdatePassword)
-			authRequiredGroup.POST("/refresh", h.RefreshAccessToken)
 		}
 	}
 }
@@ -54,7 +54,7 @@ func (h *authHandler) Login(c *gin.Context) {
 		return
 	}
 
-	accessToken, err := h.authService.Login(c.Request.Context(), req.Username, req.Password)
+	accessToken, refreshToken, err := h.authService.Login(c.Request.Context(), req.Username, req.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, dto.APIResponse{
 			Success: false,
@@ -70,7 +70,8 @@ func (h *authHandler) Login(c *gin.Context) {
 		Code:    "LOGIN_SUCCESS",
 		Message: "Login successful",
 		Data: dto.LoginResponse{
-			AccessToken: accessToken,
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
 		},
 	})
 }
@@ -123,13 +124,24 @@ func (h *authHandler) UpdatePassword(c *gin.Context) {
 // @Tags auth
 // @Accept json
 // @Produce json
+// @Param body body dto.RefreshTokenRequest true "Refresh token request"
 // @Success 200 {object} dto.APIResponse "Access token refreshed successfully"
 // @Failure 500 {object} dto.APIResponse "Internal server error"
 // @Security BearerAuth
 // @Router /auth/refresh [post]
 func (h *authHandler) RefreshAccessToken(c *gin.Context) {
-	userId := c.GetString("userId")
-	accessToken, err := h.authService.RefreshAccessToken(c.Request.Context(), userId)
+	var req dto.RefreshTokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, dto.APIResponse{
+			Success: false,
+			Code:    "BAD_REQUEST",
+			Message: "Invalid request data",
+			Error:   err.Error(),
+		})
+		return
+	}
+
+	accessToken, err := h.authService.RefreshAccessToken(c.Request.Context(), req.RefreshToken)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, dto.APIResponse{
 			Success: false,

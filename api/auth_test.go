@@ -56,10 +56,11 @@ func TestAuthHandlerSuite(t *testing.T) {
 
 func (s *AuthHandlerSuite) TestLogin() {
 	accessToken := "test_access_token"
+	refreshToken := "test_refresh_token"
 
 	s.mockAuthService.EXPECT().
 		Login(gomock.Any(), "testuser", "password123").
-		Return(accessToken, nil)
+		Return(accessToken, refreshToken, nil)
 
 	reqBody := dto.LoginRequest{
 		Username: "testuser",
@@ -87,6 +88,7 @@ func (s *AuthHandlerSuite) TestLogin() {
 	err = json.Unmarshal(raw, &data)
 	s.NoError(err)
 	s.Equal(accessToken, data.AccessToken)
+	s.Equal(refreshToken, data.RefreshToken)
 }
 
 func (s *AuthHandlerSuite) TestLoginInvalidRequestBody() {
@@ -106,7 +108,7 @@ func (s *AuthHandlerSuite) TestLoginInvalidRequestBody() {
 func (s *AuthHandlerSuite) TestLoginServiceError() {
 	s.mockAuthService.EXPECT().
 		Login(gomock.Any(), "testuser", "wrongpassword").
-		Return("", errors.New("service error"))
+		Return("", "", errors.New("service error"))
 
 	reqBody := dto.LoginRequest{
 		Username: "testuser",
@@ -192,9 +194,14 @@ func (s *AuthHandlerSuite) TestUpdatePasswordServiceError() {
 
 func (s *AuthHandlerSuite) TestRefreshAccessToken() {
 	accessToken := "test-access-token"
-	s.mockAuthService.EXPECT().RefreshAccessToken(gomock.Any(), "test-user-id").Return(accessToken, nil)
+	s.mockAuthService.EXPECT().RefreshAccessToken(gomock.Any(), "test-refresh-token").Return(accessToken, nil)
 
-	req := httptest.NewRequest("POST", "/auth/refresh", nil)
+	reqBody := dto.RefreshTokenRequest{
+		RefreshToken: "test-refresh-token",
+	}
+	jsonData, _ := json.Marshal(reqBody)
+
+	req := httptest.NewRequest("POST", "/auth/refresh", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 
@@ -216,10 +223,29 @@ func (s *AuthHandlerSuite) TestRefreshAccessToken() {
 	s.Equal(accessToken, data.AccessToken)
 }
 
-func (s *AuthHandlerSuite) TestRefreshAccessTokenServiceError() {
-	s.mockAuthService.EXPECT().RefreshAccessToken(gomock.Any(), "test-user-id").Return("", errors.New("service error"))
+func (s *AuthHandlerSuite) TestRefreshAccessTokenInvalidRequestBody() {
+	req := httptest.NewRequest("POST", "/auth/refresh", strings.NewReader("invalid json"))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
 
-	req := httptest.NewRequest("POST", "/auth/refresh", nil)
+	s.router.ServeHTTP(w, req)
+	s.Equal(http.StatusBadRequest, w.Code)
+
+	var response dto.APIResponse
+	err := json.Unmarshal(w.Body.Bytes(), &response)
+	s.NoError(err)
+	s.NotEmpty(response.Error)
+}
+
+func (s *AuthHandlerSuite) TestRefreshAccessTokenServiceError() {
+	s.mockAuthService.EXPECT().RefreshAccessToken(gomock.Any(), "test-refresh-token").Return("", errors.New("service error"))
+
+	reqBody := dto.RefreshTokenRequest{
+		RefreshToken: "test-refresh-token",
+	}
+	jsonData, _ := json.Marshal(reqBody)
+
+	req := httptest.NewRequest("POST", "/auth/refresh", bytes.NewBuffer(jsonData))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 

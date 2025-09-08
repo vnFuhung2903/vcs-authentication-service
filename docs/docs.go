@@ -79,6 +79,17 @@ const docTemplate = `{
                     "auth"
                 ],
                 "summary": "Refresh access token",
+                "parameters": [
+                    {
+                        "description": "Refresh token request",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/dto.RefreshTokenRequest"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Access token refreshed successfully",
@@ -181,8 +192,23 @@ const docTemplate = `{
                 }
             }
         },
+        "dto.RefreshTokenRequest": {
+            "type": "object",
+            "required": [
+                "refresh_token"
+            ],
+            "properties": {
+                "refresh_token": {
+                    "type": "string"
+                }
+            }
+        },
         "dto.UpdatePasswordRequest": {
             "type": "object",
+            "required": [
+                "current_password",
+                "new_password"
+            ],
             "properties": {
                 "current_password": {
                     "type": "string"

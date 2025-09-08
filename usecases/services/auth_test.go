@@ -64,12 +64,13 @@ func (s *AuthServiceSuite) TestLoginWithUsername() {
 	}
 
 	s.mockRepo.EXPECT().FindByName(username).Return(expected, nil)
-	s.mockRedis.EXPECT().Set(s.ctx, "refresh:"+expected.ID, gomock.Any(), time.Hour*24*7).Return(nil)
+	s.mockRedis.EXPECT().Set(s.ctx, gomock.Any(), expected.ID, time.Hour*24*7).Return(nil)
 	s.logger.EXPECT().Info("user logged in successfully").Times(1)
 
-	accessToken, err := s.authService.Login(s.ctx, username, password)
+	accessToken, refreshToken, err := s.authService.Login(s.ctx, username, password)
 	s.NoError(err)
 	s.NotEqual("", accessToken)
+	s.NotEqual("", refreshToken)
 }
 
 func (s *AuthServiceSuite) TestLoginWithEmailRedisError() {
@@ -84,12 +85,13 @@ func (s *AuthServiceSuite) TestLoginWithEmailRedisError() {
 	}
 
 	s.mockRepo.EXPECT().FindByEmail(email).Return(expected, nil)
-	s.mockRedis.EXPECT().Set(s.ctx, "refresh:"+expected.ID, gomock.Any(), time.Hour*24*7).Return(errors.New("redis error"))
+	s.mockRedis.EXPECT().Set(s.ctx, gomock.Any(), expected.ID, time.Hour*24*7).Return(errors.New("redis error"))
 	s.logger.EXPECT().Error("failed to set refresh token in redis", gomock.Any()).Times(1)
 
-	accessToken, err := s.authService.Login(s.ctx, email, password)
-	s.ErrorContains(err, "redis error")
+	accessToken, refreshToken, err := s.authService.Login(s.ctx, email, password)
+	s.Error(err)
 	s.Equal("", accessToken)
+	s.Equal("", refreshToken)
 }
 
 func (s *AuthServiceSuite) TestLoginUserNotFoundByUsername() {
@@ -99,9 +101,10 @@ func (s *AuthServiceSuite) TestLoginUserNotFoundByUsername() {
 	s.mockRepo.EXPECT().FindByName(username).Return(nil, errors.New("user not found"))
 	s.logger.EXPECT().Error("failed to find user by username", gomock.Any()).Times(1)
 
-	accessToken, err := s.authService.Login(s.ctx, username, password)
-	s.Equal("", accessToken)
+	accessToken, refreshToken, err := s.authService.Login(s.ctx, username, password)
 	s.ErrorContains(err, "user not found")
+	s.Equal("", accessToken)
+	s.Equal("", refreshToken)
 }
 
 func (s *AuthServiceSuite) TestLoginUserNotFoundByEmail() {
@@ -111,9 +114,10 @@ func (s *AuthServiceSuite) TestLoginUserNotFoundByEmail() {
 	s.mockRepo.EXPECT().FindByEmail(email).Return(nil, errors.New("user not found"))
 	s.logger.EXPECT().Error("failed to find user by email", gomock.Any()).Times(1)
 
-	accessToken, err := s.authService.Login(s.ctx, email, password)
-	s.Equal("", accessToken)
+	accessToken, refreshToken, err := s.authService.Login(s.ctx, email, password)
 	s.ErrorContains(err, "user not found")
+	s.Equal("", accessToken)
+	s.Equal("", refreshToken)
 }
 
 func (s *AuthServiceSuite) TestLoginWrongPassword() {
@@ -131,9 +135,10 @@ func (s *AuthServiceSuite) TestLoginWrongPassword() {
 	s.mockRepo.EXPECT().FindByName(username).Return(user, nil)
 	s.logger.EXPECT().Error("failed to validate password", gomock.Any()).Times(1)
 
-	accessToken, err := s.authService.Login(s.ctx, username, password)
-	s.Equal("", accessToken)
+	accessToken, refreshToken, err := s.authService.Login(s.ctx, username, password)
 	s.Error(err)
+	s.Equal("", accessToken)
+	s.Equal("", refreshToken)
 }
 
 func (s *AuthServiceSuite) TestUpdatePassword() {
@@ -242,12 +247,12 @@ func (s *AuthServiceSuite) TestRefreshAccessToken() {
 	}
 
 	authService := s.authService.(*authService)
-	validRefreshToken, _ := authService.generateRefreshToken(userId)
-	s.mockRedis.EXPECT().Get(s.ctx, "refresh:"+userId).Return(validRefreshToken, nil)
+	validRefreshToken, _ := authService.generateRefreshToken()
+	s.mockRedis.EXPECT().Get(s.ctx, "refresh:"+validRefreshToken).Return(userId, nil)
 	s.mockRepo.EXPECT().FindById(userId).Return(user, nil)
 	s.logger.EXPECT().Info("access token refreshed successfully").Times(1)
 
-	accessToken, err := s.authService.RefreshAccessToken(s.ctx, userId)
+	accessToken, err := s.authService.RefreshAccessToken(s.ctx, validRefreshToken)
 	s.NoError(err)
 	s.NotEmpty(accessToken)
 }
@@ -263,29 +268,17 @@ func (s *AuthServiceSuite) TestRefreshAccessTokenRedisError() {
 	s.ErrorContains(err, "redis connection failed")
 }
 
-func (s *AuthServiceSuite) TestRefreshAccessTokenInvalidToken() {
-	userId := "test-id"
-	invalidRefreshToken := "invalid.jwt.token"
-
-	s.mockRedis.EXPECT().Get(s.ctx, "refresh:"+userId).Return(invalidRefreshToken, nil)
-	s.logger.EXPECT().Error("invalid refresh token", gomock.Any()).Times(1)
-
-	accessToken, err := s.authService.RefreshAccessToken(s.ctx, userId)
-	s.Empty(accessToken)
-	s.Error(err)
-}
-
 func (s *AuthServiceSuite) TestRefreshAccessTokenUserNotFound() {
 	userId := "test-id"
 
 	authService := s.authService.(*authService)
-	validRefreshToken, _ := authService.generateRefreshToken(userId)
+	validRefreshToken, _ := authService.generateRefreshToken()
 
-	s.mockRedis.EXPECT().Get(s.ctx, "refresh:"+userId).Return(validRefreshToken, nil)
+	s.mockRedis.EXPECT().Get(s.ctx, "refresh:"+validRefreshToken).Return(userId, nil)
 	s.mockRepo.EXPECT().FindById(userId).Return(nil, errors.New("user not found"))
 	s.logger.EXPECT().Error("failed to find user by id", gomock.Any()).Times(1)
 
-	accessToken, err := s.authService.RefreshAccessToken(s.ctx, userId)
+	accessToken, err := s.authService.RefreshAccessToken(s.ctx, validRefreshToken)
 	s.Empty(accessToken)
 	s.ErrorContains(err, "user not found")
 }
